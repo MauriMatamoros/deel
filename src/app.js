@@ -2,7 +2,7 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const { sequelize } = require('./model')
 const { getProfile } = require('./middleware/getProfile')
-const { Op } = require('sequelize')
+const { Op, Transaction } = require('sequelize')
 const app = express()
 app.use(bodyParser.json())
 app.set('sequelize', sequelize)
@@ -63,6 +63,108 @@ app.get('/jobs/unpaid', getProfile, async (req, res) => {
         },
     })
     res.json(jobs)
+})
+
+app.post('/jobs/:id/pay', getProfile, async (req, res) => {
+    const { id } = req.params
+    const { Contract, Job, Profile } = req.app.get('models')
+    const transaction = await sequelize.transaction({
+        isolationLevel: Transaction.ISOLATION_LEVELS.SERIALIZABLE,
+    })
+    try {
+        const job = await Job.findOne(
+            {
+                include: [
+                    {
+                        model: Contract,
+                        where: {
+                            [Op.or]: [{ ClientId: req.profile.id }],
+                            status: 'in_progress',
+                        },
+                    },
+                ],
+                where: {
+                    id,
+                    paid: {
+                        [Op.is]: null,
+                    },
+                },
+                lock: true,
+            },
+            { transaction }
+        )
+
+        if (!job) {
+            const error = new Error('Job not found.')
+            error.code = 404
+            throw error
+        }
+
+        const client = await Profile.findOne(
+            {
+                where: {
+                    id: job.Contract.ClientId,
+                },
+                lock: true,
+            },
+            { transaction }
+        )
+
+        if (!client) {
+            const error = new Error('Client Profile not found.')
+            error.code = 404
+            throw error
+        }
+
+        if (client.balance < job.price) {
+            const error = new Error('Insufficient funds.')
+            error.code = 422
+            throw error
+        }
+
+        const contractor = await Profile.findOne(
+            {
+                where: {
+                    id: job.Contract.ContractorId,
+                },
+                lock: true,
+            },
+            { transaction }
+        )
+
+        if (!contractor) {
+            const error = new Error('Contractor Profile not found.')
+            error.code = 404
+            throw error
+        }
+
+        await Profile.update(
+            { balance: client.balance - job.price },
+            { where: { id: client.id } },
+            { transaction }
+        )
+
+        await Profile.update(
+            { balance: contractor.balance + job.price },
+            { where: { id: contractor.id } },
+            { transaction }
+        )
+
+        await Job.update(
+            { paid: 1, paymentDate: new Date() },
+            { where: { id: job.id } },
+            { transaction }
+        )
+
+        const paidJob = await Job.findOne({ where: { id: job.id } })
+
+        await transaction.commit()
+        res.send(paidJob)
+    } catch (e) {
+        await transaction.rollback()
+        console.error(e)
+        return res.sendStatus('code' in e ? e.code : 500)
+    }
 })
 
 module.exports = app
