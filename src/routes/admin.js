@@ -1,7 +1,7 @@
 const { getProfile } = require('../middleware/getProfile')
 const { query, validationResult } = require('express-validator')
 const { sequelize } = require('../model')
-const { QueryTypes } = require('sequelize')
+const { QueryTypes, Error } = require('sequelize')
 const { Router } = require('express')
 
 const router = Router()
@@ -75,7 +75,15 @@ router.get(
             .isISO8601()
             .toDate()
             .withMessage('end must be a valid date'),
-        query('limit').optional().isNumeric(),
+        query('limit')
+            .optional()
+            .isInt()
+            .custom((value) => {
+                if (value > 0) {
+                    return true
+                }
+                throw new Error('Must be a positive integer')
+            }),
     ],
     async (req, res) => {
         const errors = validationResult(req)
