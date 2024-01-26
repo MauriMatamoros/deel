@@ -1,9 +1,13 @@
 const express = require('express')
 const bodyParser = require('body-parser')
+const { Op, Transaction, QueryTypes } = require('sequelize')
+const { query, validationResult } = require('express-validator')
+
 const { sequelize } = require('./model')
 const { getProfile } = require('./middleware/getProfile')
-const { Op, Transaction } = require('sequelize')
+
 const app = express()
+
 app.use(bodyParser.json())
 app.set('sequelize', sequelize)
 app.set('models', sequelize.models)
@@ -154,8 +158,56 @@ app.post('/jobs/:id/pay', getProfile, async (req, res) => {
     } catch (e) {
         await transaction.rollback()
         console.error(e)
-        return res.sendStatus('code' in e ? e.code : 500)
+        res.sendStatus('code' in e ? e.code : 500)
     }
 })
+
+app.get(
+    '/admin/best-profession',
+    getProfile,
+    [
+        query('start')
+            .isISO8601()
+            .toDate()
+            .withMessage('start must be a valid date'),
+        query('end')
+            .isISO8601()
+            .toDate()
+            .withMessage('end must be a valid date'),
+    ],
+    async (req, res) => {
+        const errors = validationResult(req)
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() })
+        }
+        const { start, end } = req.query
+
+        const startDate = new Date(start).toISOString().slice(0, 10)
+        const endDate = new Date(end).toISOString().slice(0, 10)
+
+        const [row] = await sequelize.query(
+            `
+            WITH jobs_with_contracts AS (
+                SELECT *
+                FROM Jobs
+                JOIN Contracts
+                ON Jobs.ContractId = Contracts.id
+            )
+
+            SELECT profession, SUM(jobs_with_contracts.price) AS total_earnings
+            FROM Profiles
+            JOIN jobs_with_contracts ON ContractorId = Profiles.id
+            WHERE jobs_with_contracts.paid = 1
+            AND jobs_with_contracts.paymentDate BETWEEN :startDate AND :endDate
+            GROUP BY profession
+            ORDER BY total_earnings DESC
+            LIMIT 1;
+        `,
+            { replacements: { startDate, endDate }, type: QueryTypes.SELECT }
+        )
+
+        res.send(row)
+    }
+)
 
 module.exports = app
