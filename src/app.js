@@ -1,6 +1,6 @@
 const express = require('express')
 const bodyParser = require('body-parser')
-const { sequelize, Contract } = require('./model')
+const { sequelize } = require('./model')
 const { getProfile } = require('./middleware/getProfile')
 const { Op } = require('sequelize')
 const app = express()
@@ -38,6 +38,31 @@ app.get('/contracts', getProfile, async (req, res) => {
         },
     })
     res.json(contracts)
+})
+
+app.get('/jobs/unpaid', getProfile, async (req, res) => {
+    const { Contract, Job } = req.app.get('models')
+    const jobs = await Job.findAll({
+        include: [
+            {
+                model: Contract,
+                where: {
+                    [Op.or]: [
+                        { ContractorId: req.profile.id },
+                        { ClientId: req.profile.id },
+                    ],
+                    status: 'in_progress',
+                },
+                attributes: [],
+            },
+        ],
+        where: {
+            paid: {
+                [Op.is]: null,
+            },
+        },
+    })
+    res.json(jobs)
 })
 
 module.exports = app
