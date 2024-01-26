@@ -1,6 +1,6 @@
 const express = require('express')
 const bodyParser = require('body-parser')
-const { Op, Transaction, QueryTypes } = require('sequelize')
+const { Op, Transaction, QueryTypes, Error } = require('sequelize')
 const { query, validationResult, body } = require('express-validator')
 
 const { sequelize } = require('./model')
@@ -272,6 +272,103 @@ app.get(
         } catch (e) {
             console.log(e.message)
             res.sendStatus(500)
+        }
+    }
+)
+
+app.post(
+    '/balances/deposit/:userId',
+    getProfile,
+    [
+        body('deposit')
+            .isNumeric()
+            .withMessage('Must be a number.')
+            .custom((value) => {
+                if (value > 0) {
+                    return true
+                }
+                throw new Error('Must be a positive number')
+            }),
+    ],
+    async (req, res) => {
+        const errors = validationResult(req)
+        if (!errors.isEmpty()) {
+            return res.status(422).json({ errors: errors.array() })
+        }
+        const { deposit } = req.body
+        const { userId } = req.params
+        const { Profile } = req.app.get('models')
+        const transaction = await sequelize.transaction({
+            isolationLevel: Transaction.ISOLATION_LEVELS.SERIALIZABLE,
+        })
+        try {
+            const user = await Profile.findOne(
+                { where: { id: req.profile.id }, lock: true },
+                { transaction }
+            )
+            const [row] = await sequelize.query(
+                `
+                SELECT sum(price) * .25 AS "maxDepositAllowed"
+                FROM Jobs
+                JOIN Contracts
+                ON Jobs.ContractId = Contracts.id
+                WHERE status <> 'terminated' 
+                AND paid IS NULL 
+                AND ClientId = :id;`,
+                {
+                    replacements: { id: req.profile.id },
+                    type: QueryTypes.SELECT,
+                    transaction,
+                }
+            )
+
+            const { maxDepositAllowed } = row
+
+            if (maxDepositAllowed && deposit > maxDepositAllowed) {
+                const error = new Error('Deposit exceeds allowed amount.')
+                error.code = 422
+                throw error
+            }
+
+            if (deposit > req.profile.balance) {
+                const error = new Error('Deposit exceeds balance.')
+                error.code = 422
+                throw error
+            }
+
+            if (parseInt(userId) === req.profile.id) {
+                await user.increment('balance', { by: deposit, transaction })
+            } else {
+                const receiver = await Profile.findOne(
+                    { where: { id: userId }, lock: true },
+                    { transaction }
+                )
+
+                if (!receiver) {
+                    const error = new Error('Receiver Profile not found.')
+                    error.code = 404
+                    throw error
+                }
+
+                await user.decrement('balance', { by: deposit, transaction })
+
+                await receiver.increment('balance', {
+                    by: deposit,
+                    transaction,
+                })
+            }
+
+            await transaction.commit()
+
+            const updatedUser = await Profile.findOne({
+                where: { id: req.profile.id },
+            })
+
+            res.send(updatedUser)
+        } catch (e) {
+            await transaction.rollback()
+            console.error(e)
+            res.sendStatus('code' in e ? e.code : 500)
         }
     }
 )
