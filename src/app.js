@@ -37,7 +37,6 @@ app.get('/contracts', getProfile, async (req, res) => {
             ],
         },
     })
-    if (contracts.length === 0) return res.sendStatus(404)
     res.json(contracts)
 })
 
@@ -63,7 +62,6 @@ app.get('/jobs/unpaid', getProfile, async (req, res) => {
             },
         },
     })
-    if (jobs.length === 0) return res.sendStatus(404)
     res.json(jobs)
 })
 
