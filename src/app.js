@@ -82,7 +82,7 @@ app.post('/jobs/:id/pay', getProfile, async (req, res) => {
                     {
                         model: Contract,
                         where: {
-                            [Op.or]: [{ ClientId: req.profile.id }],
+                            ClientId: req.profile.id,
                             status: 'in_progress',
                         },
                     },
