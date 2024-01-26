@@ -138,28 +138,19 @@ app.post('/jobs/:id/pay', getProfile, async (req, res) => {
             throw error
         }
 
-        await Profile.update(
-            { balance: client.balance - job.price },
-            { where: { id: client.id } },
-            { transaction }
-        )
+        await client.decrement('balance', { by: job.price, transaction })
 
-        await Profile.update(
-            { balance: contractor.balance + job.price },
-            { where: { id: contractor.id } },
-            { transaction }
-        )
+        await contractor.increment('balance', { by: job.price, transaction })
 
-        await Job.update(
-            { paid: 1, paymentDate: new Date() },
-            { where: { id: job.id } },
-            { transaction }
-        )
+        await job
+            .set({ paid: 1, paymentDate: new Date() })
+            .save({ transaction })
 
-        const paidJob = await Job.findOne({ where: { id: job.id } })
+        const plainJob = job.get({ plain: true })
+        delete plainJob.Contract
 
         await transaction.commit()
-        res.send(paidJob)
+        res.send(plainJob)
     } catch (e) {
         await transaction.rollback()
         console.error(e)
