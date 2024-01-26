@@ -1,7 +1,7 @@
 const express = require('express')
 const bodyParser = require('body-parser')
 const { Op, Transaction, QueryTypes } = require('sequelize')
-const { query, validationResult } = require('express-validator')
+const { query, validationResult, body } = require('express-validator')
 
 const { sequelize } = require('./model')
 const { getProfile } = require('./middleware/getProfile')
@@ -185,8 +185,9 @@ app.get(
         const startDate = new Date(start).toISOString().slice(0, 10)
         const endDate = new Date(end).toISOString().slice(0, 10)
 
-        const [row] = await sequelize.query(
-            `
+        try {
+            const [row] = await sequelize.query(
+                `
             WITH jobs_with_contracts AS (
                 SELECT *
                 FROM Jobs
@@ -203,10 +204,17 @@ app.get(
             ORDER BY total_earnings DESC
             LIMIT 1;
         `,
-            { replacements: { startDate, endDate }, type: QueryTypes.SELECT }
-        )
+                {
+                    replacements: { startDate, endDate },
+                    type: QueryTypes.SELECT,
+                }
+            )
 
-        res.send(row)
+            res.send(row)
+        } catch (e) {
+            console.log(e.message)
+            res.sendStatus(500)
+        }
     }
 )
 
@@ -235,8 +243,9 @@ app.get(
         const startDate = new Date(start).toISOString().slice(0, 10)
         const endDate = new Date(end).toISOString().slice(0, 10)
 
-        const rows = await sequelize.query(
-            `
+        try {
+            const rows = await sequelize.query(
+                `
                 WITH jobs_with_contracts AS (
                     SELECT *
                     FROM Jobs
@@ -253,13 +262,17 @@ app.get(
                 ORDER BY price DESC
                 LIMIT :limit;
             `,
-            {
-                replacements: { startDate, endDate, limit },
-                type: QueryTypes.SELECT,
-            }
-        )
+                {
+                    replacements: { startDate, endDate, limit },
+                    type: QueryTypes.SELECT,
+                }
+            )
 
-        res.send(rows)
+            res.send(rows)
+        } catch (e) {
+            console.log(e.message)
+            res.sendStatus(500)
+        }
     }
 )
 
