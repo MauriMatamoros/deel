@@ -158,7 +158,9 @@ app.post('/jobs/:id/pay', getProfile, async (req, res) => {
     } catch (e) {
         await transaction.rollback()
         console.error(e)
-        res.sendStatus('code' in e ? e.code : 500)
+        res.status('code' in e ? e.code : 500).json({
+            errors: ['code' in e ? e.message : 'Internal Server Error.'],
+        })
     }
 })
 
@@ -212,8 +214,10 @@ app.get(
 
             res.send(row)
         } catch (e) {
-            console.log(e.message)
-            res.sendStatus(500)
+            console.error(e)
+            res.status('code' in e ? e.code : 500).json({
+                errors: ['code' in e ? e.message : 'Internal Server Error.'],
+            })
         }
     }
 )
@@ -270,8 +274,10 @@ app.get(
 
             res.send(rows)
         } catch (e) {
-            console.log(e.message)
-            res.sendStatus(500)
+            console.error(e)
+            res.status('code' in e ? e.code : 500).json({
+                errors: ['code' in e ? e.message : 'Internal Server Error.'],
+            })
         }
     }
 )
@@ -368,7 +374,9 @@ app.post(
         } catch (e) {
             await transaction.rollback()
             console.error(e)
-            res.sendStatus('code' in e ? e.code : 500)
+            res.status('code' in e ? e.code : 500).json({
+                errors: ['code' in e ? e.message : 'Internal Server Error.'],
+            })
         }
     }
 )
