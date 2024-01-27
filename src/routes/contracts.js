@@ -6,17 +6,28 @@ const router = Router()
 router.get('/:id', getProfile, async (req, res) => {
     const { Contract } = req.app.get('models')
     const { id } = req.params
-    const contract = await Contract.findOne({
-        where: {
-            id,
-            [Op.or]: [
-                { ContractorId: req.profile.id },
-                { ClientId: req.profile.id },
-            ],
-        },
-    })
-    if (!contract) return res.status(404).end()
-    res.json(contract)
+    try {
+        const contract = await Contract.findOne({
+            where: {
+                id,
+                [Op.or]: [
+                    { ContractorId: req.profile.id },
+                    { ClientId: req.profile.id },
+                ],
+            },
+        })
+        if (!contract) {
+            const error = new Error('Contract not found.')
+            error.code = 404
+            throw error
+        }
+        res.json(contract)
+    } catch (e) {
+        console.error(e)
+        res.status('code' in e ? e.code : 500).json({
+            errors: ['code' in e ? e.message : 'Internal Server Error.'],
+        })
+    }
 })
 
 router.get('/', getProfile, async (req, res) => {
