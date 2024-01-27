@@ -96,3 +96,9 @@ It would be great for example if you'd write some unit test / simple frontend de
 When you have finished the assignment, zip your repo (make sure to include .git folder) and send us the zip.
 
 Thank you and good luck! 🙏
+
+## Extra Notes Because Time Was Exceeded
+
+I am proud to present the work I have accomplished for this take-home assignment. I took the initiative to refactor the existing codebase, investing additional time beyond the estimated time frame to ensure the improvement would be sustainable and valuable in the long term. The commit history stands as a testament to the work and effort put into this task.
+My main focus was to deliver the best iteration of this assignment I could possibly create within the 48-hour period. Even though I exceeded the initial time estimates (of 3 hours), I believe that the quality, readability, and maintainability of the codebase have significantly improved as a result.
+The aim was not only to meet the requirements but also to ensure that the codebase is well-structured and optimized.
