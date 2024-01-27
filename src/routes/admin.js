@@ -8,7 +8,6 @@ const { getBestClients, getBestProfession } = require('../db/queries')
 const router = Router()
 router.get(
     '/best-profession',
-    getProfile,
     [
         query('start')
             .isISO8601()
@@ -47,7 +46,6 @@ router.get(
 
 router.get(
     '/best-clients',
-    getProfile,
     [
         query('start')
             .isISO8601()

@@ -8,7 +8,6 @@ const { getMaxDepositAllowed } = require('../db/queries')
 const router = Router()
 router.post(
     '/deposit/:userId',
-    getProfile,
     [
         body('deposit')
             .isNumeric()

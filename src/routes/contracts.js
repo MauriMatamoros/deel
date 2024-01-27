@@ -3,7 +3,7 @@ const { Op } = require('sequelize')
 const { Router } = require('express')
 
 const router = Router()
-router.get('/:id', getProfile, async (req, res) => {
+router.get('/:id', async (req, res) => {
     const { Contract } = req.app.get('models')
     const { id } = req.params
     try {
@@ -30,7 +30,7 @@ router.get('/:id', getProfile, async (req, res) => {
     }
 })
 
-router.get('/', getProfile, async (req, res) => {
+router.get('/', async (req, res) => {
     const { Contract } = req.app.get('models')
     try {
         const contracts = await Contract.findAll({

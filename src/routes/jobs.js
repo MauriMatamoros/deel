@@ -4,7 +4,7 @@ const { sequelize } = require('../model')
 const { Router } = require('express')
 
 const router = Router()
-router.get('/unpaid', getProfile, async (req, res) => {
+router.get('/unpaid', async (req, res) => {
     const { Contract, Job } = req.app.get('models')
     try {
         const jobs = await Job.findAll({
@@ -36,7 +36,7 @@ router.get('/unpaid', getProfile, async (req, res) => {
     }
 })
 
-router.post('/:id/pay', getProfile, async (req, res) => {
+router.post('/:id/pay', async (req, res) => {
     const { id } = req.params
     const { Contract, Job, Profile } = req.app.get('models')
     const transaction = await sequelize.transaction({
