@@ -50,7 +50,7 @@ router.post(
                 throw error
             }
 
-            if (deposit > req.profile.balance) {
+            if (maxDepositAllowed && deposit > req.profile.balance) {
                 const error = new Error('Deposit exceeds balance.')
                 error.code = 422
                 throw error
