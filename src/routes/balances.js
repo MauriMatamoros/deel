@@ -1,10 +1,10 @@
-const { getProfile } = require('../middleware/getProfile')
 const { body, validationResult } = require('express-validator')
 const { Error, Transaction, QueryTypes } = require('sequelize')
 const { sequelize } = require('../model')
 const { Router } = require('express')
 const { getMaxDepositAllowed } = require('../db/queries')
 const { getStatusCode, buildErrorPayload } = require('../utils/handleErrors')
+const validateNumberIsPositive = require('../utils/validateNumberIsPositive')
 
 const router = Router()
 router.post(
@@ -13,12 +13,7 @@ router.post(
         body('deposit')
             .isNumeric()
             .withMessage('Must be a number.')
-            .custom((value) => {
-                if (value > 0) {
-                    return true
-                }
-                throw new Error('Must be a positive number')
-            }),
+            .custom(validateNumberIsPositive),
     ],
     async (req, res) => {
         const errors = validationResult(req)

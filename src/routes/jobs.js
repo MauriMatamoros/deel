@@ -1,5 +1,4 @@
-const { getProfile } = require('../middleware/getProfile')
-const { Op, Transaction, Error } = require('sequelize')
+const { Op, Transaction } = require('sequelize')
 const { sequelize } = require('../model')
 const { Router } = require('express')
 const { getStatusCode, buildErrorPayload } = require('../utils/handleErrors')

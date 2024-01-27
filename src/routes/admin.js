@@ -1,11 +1,11 @@
-const { getProfile } = require('../middleware/getProfile')
 const { query, validationResult } = require('express-validator')
 const { sequelize } = require('../model')
-const { QueryTypes, Error } = require('sequelize')
+const { QueryTypes } = require('sequelize')
 const { Router } = require('express')
 const { getBestClients, getBestProfession } = require('../db/queries')
 const formatDate = require('../utils/formatDate')
 const { getStatusCode, buildErrorPayload } = require('../utils/handleErrors')
+const validateNumberIsPositive = require('../utils/validateNumberIsPositive')
 
 const router = Router()
 router.get(
@@ -55,15 +55,7 @@ router.get(
             .isISO8601()
             .toDate()
             .withMessage('end must be a valid date'),
-        query('limit')
-            .optional()
-            .isInt()
-            .custom((value) => {
-                if (value > 0) {
-                    return true
-                }
-                throw new Error('Must be a positive integer')
-            }),
+        query('limit').optional().isInt().custom(validateNumberIsPositive),
     ],
     async (req, res) => {
         const errors = validationResult(req)

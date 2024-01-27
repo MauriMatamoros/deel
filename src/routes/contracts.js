@@ -1,4 +1,3 @@
-const { getProfile } = require('../middleware/getProfile')
 const { Op } = require('sequelize')
 const { Router } = require('express')
 const { getStatusCode, buildErrorPayload } = require('../utils/handleErrors')
