@@ -4,6 +4,7 @@ const { sequelize } = require('../model')
 const { QueryTypes, Error } = require('sequelize')
 const { Router } = require('express')
 const { getBestClients, getBestProfession } = require('../db/queries')
+const formatDate = require('../utils/formatDate')
 
 const router = Router()
 router.get(
@@ -25,8 +26,8 @@ router.get(
         }
         const { start, end } = req.query
 
-        const startDate = new Date(start).toISOString().slice(0, 10)
-        const endDate = new Date(end).toISOString().slice(0, 10)
+        const startDate = formatDate(start)
+        const endDate = formatDate(end)
 
         try {
             const [row] = await sequelize.query(getBestProfession, {
@@ -73,8 +74,8 @@ router.get(
         const { start, end } = req.query
         const limit = req.query.limit || 2
 
-        const startDate = new Date(start).toISOString().slice(0, 10)
-        const endDate = new Date(end).toISOString().slice(0, 10)
+        const startDate = formatDate(start)
+        const endDate = formatDate(end)
 
         try {
             const rows = await sequelize.query(getBestClients, {
