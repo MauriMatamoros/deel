@@ -6,27 +6,34 @@ const { Router } = require('express')
 const router = Router()
 router.get('/unpaid', getProfile, async (req, res) => {
     const { Contract, Job } = req.app.get('models')
-    const jobs = await Job.findAll({
-        include: [
-            {
-                model: Contract,
-                where: {
-                    [Op.or]: [
-                        { ContractorId: req.profile.id },
-                        { ClientId: req.profile.id },
-                    ],
-                    status: 'in_progress',
+    try {
+        const jobs = await Job.findAll({
+            include: [
+                {
+                    model: Contract,
+                    where: {
+                        [Op.or]: [
+                            { ContractorId: req.profile.id },
+                            { ClientId: req.profile.id },
+                        ],
+                        status: 'in_progress',
+                    },
+                    attributes: [],
                 },
-                attributes: [],
+            ],
+            where: {
+                paid: {
+                    [Op.is]: null,
+                },
             },
-        ],
-        where: {
-            paid: {
-                [Op.is]: null,
-            },
-        },
-    })
-    res.json(jobs)
+        })
+        res.json(jobs)
+    } catch (e) {
+        console.error(e)
+        res.status('code' in e ? e.code : 500).json({
+            errors: ['code' in e ? e.message : 'Internal Server Error.'],
+        })
+    }
 })
 
 router.post('/:id/pay', getProfile, async (req, res) => {

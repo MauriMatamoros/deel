@@ -32,18 +32,25 @@ router.get('/:id', getProfile, async (req, res) => {
 
 router.get('/', getProfile, async (req, res) => {
     const { Contract } = req.app.get('models')
-    const contracts = await Contract.findAll({
-        where: {
-            status: {
-                [Op.ne]: 'terminated',
+    try {
+        const contracts = await Contract.findAll({
+            where: {
+                status: {
+                    [Op.ne]: 'terminated',
+                },
+                [Op.or]: [
+                    { ContractorId: req.profile.id },
+                    { ClientId: req.profile.id },
+                ],
             },
-            [Op.or]: [
-                { ContractorId: req.profile.id },
-                { ClientId: req.profile.id },
-            ],
-        },
-    })
-    res.json(contracts)
+        })
+        res.json(contracts)
+    } catch (e) {
+        console.error(e)
+        res.status('code' in e ? e.code : 500).json({
+            errors: ['code' in e ? e.message : 'Internal Server Error.'],
+        })
+    }
 })
 
 module.exports = router
