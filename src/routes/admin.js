@@ -3,6 +3,7 @@ const { query, validationResult } = require('express-validator')
 const { sequelize } = require('../model')
 const { QueryTypes, Error } = require('sequelize')
 const { Router } = require('express')
+const { getBestClients, getBestProfession } = require('../db/queries')
 
 const router = Router()
 router.get(
@@ -29,29 +30,10 @@ router.get(
         const endDate = new Date(end).toISOString().slice(0, 10)
 
         try {
-            const [row] = await sequelize.query(
-                `
-            WITH jobs_with_contracts AS (
-                SELECT *
-                FROM Jobs
-                JOIN Contracts
-                ON Jobs.ContractId = Contracts.id
-            )
-
-            SELECT profession, SUM(jobs_with_contracts.price) AS total_earnings
-            FROM Profiles
-            JOIN jobs_with_contracts ON ContractorId = Profiles.id
-            WHERE jobs_with_contracts.paid = 1
-            AND jobs_with_contracts.paymentDate BETWEEN :startDate AND DATE(:endDate, '+1 day')
-            GROUP BY profession
-            ORDER BY total_earnings DESC
-            LIMIT 1;
-        `,
-                {
-                    replacements: { startDate, endDate },
-                    type: QueryTypes.SELECT,
-                }
-            )
+            const [row] = await sequelize.query(getBestProfession, {
+                replacements: { startDate, endDate },
+                type: QueryTypes.SELECT,
+            })
 
             res.send(row)
         } catch (e) {
@@ -97,29 +79,10 @@ router.get(
         const endDate = new Date(end).toISOString().slice(0, 10)
 
         try {
-            const rows = await sequelize.query(
-                `
-                WITH jobs_with_contracts AS (
-                    SELECT *
-                    FROM Jobs
-                    JOIN Contracts
-                    ON Jobs.ContractId = Contracts.id
-                )
-
-                SELECT Profiles.id, firstName || ' ' || lastName AS fullName, jobs_with_contracts.price
-                FROM Profiles
-                JOIN jobs_with_contracts ON ClientId = Profiles.id
-                WHERE jobs_with_contracts.paid = 1
-                AND jobs_with_contracts.paymentDate BETWEEN :startDate AND DATE(:endDate, '+1 day')
-                GROUP BY Profiles.id
-                ORDER BY price DESC
-                LIMIT :limit;
-            `,
-                {
-                    replacements: { startDate, endDate, limit },
-                    type: QueryTypes.SELECT,
-                }
-            )
+            const rows = await sequelize.query(getBestClients, {
+                replacements: { startDate, endDate, limit },
+                type: QueryTypes.SELECT,
+            })
 
             res.send(rows)
         } catch (e) {

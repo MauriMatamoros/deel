@@ -3,6 +3,7 @@ const { body, validationResult } = require('express-validator')
 const { Error, Transaction, QueryTypes } = require('sequelize')
 const { sequelize } = require('../model')
 const { Router } = require('express')
+const { getMaxDepositAllowed } = require('../db/queries')
 
 const router = Router()
 router.post(
@@ -35,21 +36,11 @@ router.post(
                 { where: { id: req.profile.id }, lock: true },
                 { transaction }
             )
-            const [row] = await sequelize.query(
-                `
-                SELECT sum(price) * .25 AS "maxDepositAllowed"
-                FROM Jobs
-                JOIN Contracts
-                ON Jobs.ContractId = Contracts.id
-                WHERE status <> 'terminated' 
-                AND paid IS NULL 
-                AND ClientId = :id;`,
-                {
-                    replacements: { id: req.profile.id },
-                    type: QueryTypes.SELECT,
-                    transaction,
-                }
-            )
+            const [row] = await sequelize.query(getMaxDepositAllowed, {
+                replacements: { id: req.profile.id },
+                type: QueryTypes.SELECT,
+                transaction,
+            })
 
             const { maxDepositAllowed } = row
 
