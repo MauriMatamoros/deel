@@ -1,6 +1,7 @@
 const { getProfile } = require('../middleware/getProfile')
 const { Op } = require('sequelize')
 const { Router } = require('express')
+const { getStatusCode, buildErrorPayload } = require('../utils/handleErrors')
 
 const router = Router()
 router.get('/:id', async (req, res) => {
@@ -47,9 +48,7 @@ router.get('/', async (req, res) => {
         res.json(contracts)
     } catch (e) {
         console.error(e)
-        res.status('code' in e ? e.code : 500).json({
-            errors: ['code' in e ? e.message : 'Internal Server Error.'],
-        })
+        res.status(getStatusCode(e)).json(buildErrorPayload(e))
     }
 })
 

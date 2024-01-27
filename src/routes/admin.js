@@ -5,6 +5,7 @@ const { QueryTypes, Error } = require('sequelize')
 const { Router } = require('express')
 const { getBestClients, getBestProfession } = require('../db/queries')
 const formatDate = require('../utils/formatDate')
+const { getStatusCode, buildErrorPayload } = require('../utils/handleErrors')
 
 const router = Router()
 router.get(
@@ -38,9 +39,7 @@ router.get(
             res.send(row)
         } catch (e) {
             console.error(e)
-            res.status('code' in e ? e.code : 500).json({
-                errors: ['code' in e ? e.message : 'Internal Server Error.'],
-            })
+            res.status(getStatusCode(e)).json(buildErrorPayload(e))
         }
     }
 )
@@ -86,9 +85,7 @@ router.get(
             res.send(rows)
         } catch (e) {
             console.error(e)
-            res.status('code' in e ? e.code : 500).json({
-                errors: ['code' in e ? e.message : 'Internal Server Error.'],
-            })
+            res.status(getStatusCode(e)).json(buildErrorPayload(e))
         }
     }
 )

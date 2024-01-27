@@ -4,6 +4,7 @@ const { Error, Transaction, QueryTypes } = require('sequelize')
 const { sequelize } = require('../model')
 const { Router } = require('express')
 const { getMaxDepositAllowed } = require('../db/queries')
+const { getStatusCode, buildErrorPayload } = require('../utils/handleErrors')
 
 const router = Router()
 router.post(
@@ -87,9 +88,7 @@ router.post(
         } catch (e) {
             await transaction.rollback()
             console.error(e)
-            res.status('code' in e ? e.code : 500).json({
-                errors: ['code' in e ? e.message : 'Internal Server Error.'],
-            })
+            res.status(getStatusCode(e)).json(buildErrorPayload(e))
         }
     }
 )

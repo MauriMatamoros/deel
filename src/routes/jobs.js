@@ -2,6 +2,7 @@ const { getProfile } = require('../middleware/getProfile')
 const { Op, Transaction, Error } = require('sequelize')
 const { sequelize } = require('../model')
 const { Router } = require('express')
+const { getStatusCode, buildErrorPayload } = require('../utils/handleErrors')
 
 const router = Router()
 router.get('/unpaid', async (req, res) => {
@@ -30,9 +31,7 @@ router.get('/unpaid', async (req, res) => {
         res.json(jobs)
     } catch (e) {
         console.error(e)
-        res.status('code' in e ? e.code : 500).json({
-            errors: ['code' in e ? e.message : 'Internal Server Error.'],
-        })
+        res.status(getStatusCode(e)).json(buildErrorPayload(e))
     }
 })
 
@@ -125,9 +124,7 @@ router.post('/:id/pay', async (req, res) => {
     } catch (e) {
         await transaction.rollback()
         console.error(e)
-        res.status('code' in e ? e.code : 500).json({
-            errors: ['code' in e ? e.message : 'Internal Server Error.'],
-        })
+        res.status(getStatusCode(e)).json(buildErrorPayload(e))
     }
 })
 
